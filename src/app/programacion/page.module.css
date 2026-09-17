@@ -1,0 +1,157 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.container h1 {
+  font-family: var(--font-heading);
+  text-align: center;
+  margin-bottom: 3rem;
+  color: var(--color-brown);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--color-brown-light);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.dayCard {
+  background-color: var(--surface);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.currentDay {
+  border-color: var(--color-green);
+  box-shadow: 0 4px 12px rgba(107, 142, 35, 0.2);
+}
+
+.weekdayCard {
+  grid-column: 1 / -1;
+  border-color: var(--color-green);
+  box-shadow: 0 4px 14px rgba(107, 142, 35, 0.18);
+}
+
+.dayHeader {
+  background-color: var(--color-green-dark);
+  color: white;
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+  position: relative;
+}
+
+.dayHeader h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.todayBadge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--color-green);
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.programList {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.programItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.programItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.timeBlock {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--color-green, #16a34a);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.programInfo {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.programInfo > div {
+  min-width: 0;
+}
+
+.programImage {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.programName {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--color-brown);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.conductor {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-brown-light);
+}
+
+.noPrograms {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

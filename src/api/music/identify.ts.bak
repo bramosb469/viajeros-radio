@@ -1,0 +1,252 @@
+import { NextResponse } from 'next/server';
+import { captureAudioFromStream } from '@/services/mudio-capture';
+import recognitionService from '@/services/music/recognition-service';
+import ACRCloudProvider from '@/services/music/acrcloud-provider';
+import type { RecognitionResult } from '@/services/music/recognition-provider';
+
+// Configuration interfaces
+interface IdentifyConfig {
+  captureSeconds: number;
+  identificationTimeoutMs: number;
+  totalTimeoutMs: number;
+  rateLimit: {
+    requestsPerMinute: number;
+    windowMs: number;
+  };
+}
+
+/**
+ * Default configuration - will be overridden by environment variables
+ */
+const defaultConfig: IdentifyConfig = {
+  captureSeconds: 12,
+  identificationTimeoutMs: 15000,
+  totalTimeoutMs: 30000,
+  rateLimit: {
+    requestsPerMinute: 3,
+    windowMs: 60000,
+  },
+};
+
+/**
+ * Rate limiting store (in-memory for now)
+ * In production, use Redis or a dedicated rate limiting service
+ */
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+/**
+ * Checks if a request is rate-limited for a given IP
+ */
+function checkRateLimit(ip: string, config: IdentifyConfig): { allowed: boolean; resetIn?: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+
+  if (!entry) {
+    // First request from this IP
+    rateLimitStore.set(ip, {
+      count: 1,
+      resetTime: now + config.rateLimit.windowMs,
+    });
+    return { allowed: true };
+  }
+
+  // Check if window has reset
+  if (now >= entry.resetTime) {
+    // Reset the counter
+    rateLimitStore.set(ip, {
+      count: 1,
+      resetTime: now + config.rateLimit.windowMs,
+    });
+    return { allowed: true };
+  }
+
+  // Increment counter
+  entry.count += 1;
+  rateLimitStore.set(ip, entry);
+
+  if (entry.count > config.rateLimit.requestsPerMinute) {
+    return { 
+      allowed: false, 
+      resetIn: entry.resetTime - now 
+    };
+  }
+
+  return { allowed: true };
+}
+
+/**
+ * POST /api/music/identify
+ * Identifies the currently playing song from the radio stream
+ */
+export async function POST(request: Request) {
+  try {
+    const ip = request.headers.get('x-forwarded-for') || 
+                (request.headers.get('x-real-ip') || 'unknown') || 
+                'unknown';
+
+    // Configuración desde variables de entorno
+    const config: IdentifyConfig = {
+      captureSeconds: parseInt(process.env.IDENTIFY_CAPTURE_SECONDS ?? '12', 10),
+      identificationTimeoutMs: parseInt(process.env.IDENTIFY_TIMEOUT_MS ?? '15000', 10),
+      totalTimeoutMs: parseInt(process.env.IDENTIFY_TOTAL_TIMEOUT_MS ?? '30000', 10),
+      rateLimit: {
+        requestsPerMinute: parseInt(process.env.IDENTIFY_RATE_LIMIT ?? '3', 10),
+        windowMs: parseInt(process.env.IDENTIFY_RATE_WINDOW ?? '60000', 10),
+      },
+    };
+
+    // Rate limiting check
+    const rateLimit = checkRateLimit(ip, config);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'RATE_LIMIT', resetIn: rateLimit.resetIn },
+        { status: 429 }
+      );
+    }
+
+    // Verificar proveedor configurado
+    const providerName = process.env.MUSIC_RECOGNITION_PROVIDER ?? 'acrcloud';
+    
+    // Capturar audio del stream
+    const streamUrl = process.env.RADIO_STREAM_URL;
+    
+    if (!streamUrl) {
+      return NextResponse.json(
+        { success: false, error: 'CONFIGURATION_ERROR', message: 'RADIO_STREAM_URL no configurado' },
+        { status: 500 }
+      );
+    }
+
+    // Paso 1: Capturar audio del stream
+    const captureStart = Date.now();
+    const captureResult = await captureAudioFromStream(streamUrl, {
+      captureSeconds: config.captureSeconds,
+      timeoutMs: config.identificationTimeoutMs,
+    });
+
+    const captureDuration = Date.now() - captureStart;
+
+    if (!captureResult.success) {
+      let errorMessage = 'AUDIO_CAPTURE_ERROR';
+      
+      switch (captureResult.error) {
+        case 'FFMPEG_NOT_AVAILABLE':
+          errorMessage = 'AUDIO_CAPTURE_ERROR';
+          break;
+        case 'STREAM_TIMEOUT':
+          errorMessage = 'STREAM_TIMEOUT';
+          break;
+        case 'STREAM_UNAVAILABLE':
+          errorMessage = 'STREAM_UNAVAILABLE';
+          break;
+        case 'AUDIO_CAPTURE_ERROR':
+          errorMessage = 'AUDIO_CAPTURE_ERROR';
+          break;
+        default:
+          errorMessage = captureResult.error || 'AUDIO_CAPTURE_ERROR';
+      }
+
+      // Registrar en logs
+      console.log(`[Music Identify] Capture error: ${errorMessage} (stream URL: ${streamUrl})`);
+      
+      return NextResponse.json(
+        { success: false, error: errorMessage },
+        { status: 500 }
+      );
+    }
+
+    // Paso 2: Identificar canción usando el proveedor configurado
+    // Configurar timeout total para la identificación
+    const identificationPromise = recognitionService.identify(captureResult.audio);
+    
+    const identificationResult = await Promise.race([
+      identificationPromise,
+      new Promise<RecognitionResult | null>((_, reject) => {
+        setTimeout(() => reject(new Error('IDENTIFICATION_TIMEOUT')), config.identificationTimeoutMs);
+      })
+    ]);
+
+    if (!identificationResult) {
+      return NextResponse.json(
+        { success: false, error: 'SONG_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+
+    // Éxito - devolver resultado normalizado
+    const totalDuration = Date.now() - captureStart;
+
+    console.log(`[Music Identify] Success in ${totalDuration}ms`, {
+      provider: identificationResult.provider,
+      title: identificationResult.title,
+      confidence: identificationResult.confidence,
+    });
+
+    return NextResponse.json({
+      success: true,
+      result: {
+        title: identificationResult.title,
+        artist: identificationResult.artist,
+        album: identificationResult.album,
+        albumArt: identificationResult.albumArt,
+        releaseDate: identificationResult.releaseDate,
+        isrc: identificationResult.isrc,
+        duration: identificationResult.duration,
+        confidence: identificationResult.confidence,
+        provider: identificationResult.provider,
+        externalLinks: identificationResult.externalLinks,
+      },
+    });
+
+  } catch (error: any) {
+    console.error('[Music Identify] Unexpected error:', error);
+
+    // Nunca exponer información interna al usuario
+    const errorCode = error.message?.includes('timeout') 
+      ? 'IDENTIFICATION_TIMEOUT' 
+      : 'CONFIGURATION_ERROR';
+
+    return NextResponse.json(
+      { success: false, error: errorCode },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/music/identify/health
+ * Health check for the music identification service
+ */
+export async function GET(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  
+  const isAvailable = !!(
+    process.env.RADIO_STREAM_URL && 
+    process.env.MUSIC_RECOGNITION_PROVIDER
+  );
+
+  return NextResponse.json({
+    status: isAvailable ? 'ready' : 'misconfigured',
+    provider: process.env.MUSIC_RECOGNITION_PROVIDER ?? 'none',
+    streamUrlConfigured: !!process.env.RADIO_STREAM_URL,
+    ffmpegAvailable: require('@/services/mudio-capture').isFfmpegAvailable(),
+    rateLimit: {
+      remaining: getRateLimitRemaining(ip),
+    },
+  });
+}
+
+function getRateLimitRemaining(ip: string): number {
+  const entry = rateLimitStore.get(ip);
+  if (!entry) return 3;
+  if (Date.now() >= entry.resetTime) return 3;
+  return Math.max(0, 3 - entry.count);
+}
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};

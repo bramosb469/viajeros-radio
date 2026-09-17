@@ -1,0 +1,431 @@
+/* ==========================================================================
+   Reproductor — Viajeros Radio
+   Diseño sutil y elegante con temas claro/oscuro (oscuro por defecto)
+   ========================================================================== */
+
+.playerContainer {
+  --player-height-desktop: 64px;
+  --player-height-mobile: 60px;
+  --player-height: var(--player-height-desktop);
+  --z-player: 400;
+
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: var(--z-player);
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ===== Tema oscuro (por defecto) ===== */
+.themeDark {
+  --bg-color: rgba(18, 20, 24, 0.88);
+  --border-color: rgba(229, 232, 238, 0.08);
+  --panel-bg: rgba(30, 33, 40, 0.95);
+  --text-primary: #e7eaef;
+  --text-secondary: #8f97a5;
+  --text-muted: #6b7280;
+  --accent: #c9a86a;
+  --accent-hover: #d8bc82;
+  --accent-soft: rgba(201, 168, 106, 0.35);
+  --danger: #e2797a;
+  --track: rgba(229, 232, 238, 0.15);
+  --shadow: 0 -12px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ===== Tema claro ===== */
+.themeLight {
+  --bg-color: rgba(250, 248, 244, 0.92);
+  --border-color: rgba(26, 26, 26, 0.09);
+  --panel-bg: rgba(255, 255, 255, 0.97);
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b6b6b;
+  --text-muted: #9a9a9a;
+  --accent: #8b6f47;
+  --accent-hover: #6f5737;
+  --accent-soft: rgba(139, 111, 71, 0.15);
+  --danger: #c9503f;
+  --track: rgba(26, 26, 26, 0.15);
+  --shadow: 0 -12px 32px rgba(26, 26, 26, 0.08);
+}
+
+@media (max-width: 768px) {
+  .playerContainer {
+    --player-height: var(--player-height-mobile);
+  }
+}
+
+.autoplayPrompt {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--panel-bg);
+  color: var(--text-primary);
+  padding: 10px 20px;
+  border-radius: 14px 14px 0 0;
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow);
+  font-size: 0.825rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.listenButton {
+  background-color: var(--accent);
+  color: var(--bg-color);
+  border: none;
+  padding: 6px 18px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  letter-spacing: 0.04em;
+}
+
+.listenButton:hover {
+  background-color: var(--accent-hover);
+}
+
+.playerBar {
+  height: var(--player-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  background-color: var(--bg-color);
+  border-top: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+}
+
+/* Izquierda */
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex: 1;
+  min-width: 0;
+}
+
+.liveIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.liveIndicator.isLive {
+  opacity: 1;
+}
+
+.pulseDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+}
+
+.isLive .pulseDot {
+  background-color: var(--accent);
+  animation: pulse 1.6s ease-out infinite;
+}
+
+.liveText {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text-secondary);
+}
+
+.isLive .liveText {
+  color: var(--accent);
+}
+
+.programInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--border-color);
+  padding-left: 18px;
+  height: 100%;
+  justify-content: center;
+}
+
+.programName {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+.programConductor {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Centro */
+.centerSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.playPauseBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.playPauseBtn:hover {
+  background-color: var(--accent-soft);
+  border-color: var(--accent-hover);
+  color: var(--accent-hover);
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+}
+
+.iconPlay {
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.statusMessage {
+  position: absolute;
+  top: calc(100% + 2px);
+  font-size: 0.62rem;
+  color: var(--danger);
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+/* Derecha */
+.rightSection {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  flex: 1;
+}
+
+.equalizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 14px;
+}
+
+.equalizer .bar {
+  width: 3px;
+  height: 100%;
+  background-color: var(--track);
+  border-radius: 2px;
+  transform-origin: bottom;
+  transform: scaleY(0.25);
+  transition: background-color 0.3s ease;
+}
+
+.eqActive .bar {
+  background-color: var(--accent);
+  animation: soundWave 1.4s ease-in-out infinite alternate;
+}
+
+.eqActive .bar:nth-child(1) { animation-delay: 0.1s; }
+.eqActive .bar:nth-child(2) { animation-delay: 0.5s; }
+.eqActive .bar:nth-child(3) { animation-delay: 0.25s; }
+.eqActive .bar:nth-child(4) { animation-delay: 0.65s; }
+
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.muteBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.muteBtn:hover {
+  color: var(--text-primary);
+}
+
+.iconSmall {
+  width: 18px;
+  height: 18px;
+}
+
+.volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 84px;
+  height: 4px;
+  background: var(--track);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.volumeSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.volumeSlider::-moz-range-track {
+  height: 4px;
+  background: var(--track);
+  border-radius: 2px;
+}
+
+.themeToggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.themeToggle:hover {
+  color: var(--text-primary);
+  background-color: var(--accent-soft);
+}
+
+/* Animaciones */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent-soft);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes soundWave {
+  0% { transform: scaleY(0.25); }
+  100% { transform: scaleY(1); }
+}
+
+/* Responsividad Móvil */
+@media (max-width: 768px) {
+  .playerBar {
+    padding: 0 16px;
+    gap: 10px;
+  }
+
+  .leftSection {
+    gap: 10px;
+  }
+
+  .programInfo {
+    display: none;
+  }
+
+  .volumeSlider {
+    display: none;
+  }
+
+  .equalizer {
+    display: none;
+  }
+
+  .rightSection {
+    gap: 10px;
+    flex: unset;
+  }
+
+  .playPauseBtn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .autoplayPrompt {
+    width: 100%;
+    border-radius: 0;
+    justify-content: center;
+  }
+}

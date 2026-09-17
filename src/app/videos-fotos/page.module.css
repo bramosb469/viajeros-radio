@@ -1,0 +1,154 @@
+.tabsContainer {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  color: var(--color-brown-light);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.tabButton:hover {
+  color: var(--color-brown);
+}
+
+.activeTab {
+  color: var(--color-brown);
+  font-weight: bold;
+}
+
+.activeTab::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--color-green);
+  border-radius: 3px 3px 0 0;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--color-brown-light);
+}
+
+/* Videos */
+.videosGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.videoCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.iframeWrapper {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.iframeWrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.videoTitle {
+  padding: 1rem;
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-brown);
+  text-align: center;
+}
+
+/* Albums */
+.albumsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.albumCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.albumCard:hover {
+  transform: translateY(-4px);
+}
+
+.albumCover {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.albumPlaceholder {
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: var(--surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-brown-light);
+}
+
+.albumInfo {
+  padding: 1rem;
+  text-align: center;
+}
+
+.albumName {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--color-brown);
+}
+
+.photoCount {
+  font-size: 0.9rem;
+  color: var(--color-brown-light);
+}
+
+@media (max-width: 1024px) {
+  .albumsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .videosGrid,
+  .albumsGrid {
+    grid-template-columns: 1fr;
+  }
+}
