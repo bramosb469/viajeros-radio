@@ -34,6 +34,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Create Turbopack module fix
+        run: |
+          HASH=$(grep -oP '@prisma/client-[a-f0-9]+' .next/server/chunks/ssr/*.js 2>/dev/null | head -1 | sed 's/.*@prisma\///')
+          if [ -n "$HASH" ]; then
+            mkdir -p "node_modules/@prisma/$HASH"
+            echo '{"name":"@prisma/'$HASH'","main":"index.js"}' > "node_modules/@prisma/$HASH/package.json"
+            echo 'module.exports = require("@prisma/client");' > "node_modules/@prisma/$HASH/index.js"
+            echo "Created wrapper for @prisma/$HASH"
+          fi
+
       - name: Create deploy tar
         run: tar -czf deploy.tar.gz --exclude='node_modules/.cache' --exclude='.next/cache' .next/ prisma/ server.js package.json package-lock.json next.config.ts tsconfig.json .env node_modules/
 
