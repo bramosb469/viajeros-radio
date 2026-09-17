@@ -1,0 +1,100 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Create .env
+        run: |
+          echo "DATABASE_URL=file:./dev.db" >> .env
+          echo "BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}" >> .env
+          echo "BETTER_AUTH_URL=https://viajerosradio.uy" >> .env
+          echo "ADMIN_EMAIL=viajerosdelfolklore@hotmail.com" >> .env
+          echo "ADMIN_PASSWORD=Viajerosradio21" >> .env
+          echo "RADIO_STREAM_URL=http://170.249.203.186:8000/stream" >> .env
+
+      - name: Build
+        run: npm run build
+
+      - name: Create deploy package
+        run: |
+          mkdir -p deploy
+          cp -r .next deploy/
+          cp -r prisma deploy/
+          cp -r node_modules deploy/
+          cp server.js deploy/
+          cp package.json deploy/
+          cp package-lock.json deploy/
+          cp next.config.ts deploy/
+          cp tsconfig.json deploy/
+          cp .env deploy/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-package
+          path: deploy/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-package
+          path: deploy/
+
+      - name: Create tar
+        run: tar -czf deploy.tar.gz -C deploy .
+
+      - name: Upload to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "deploy.tar.gz"
+          target: "/home/viajeros/"
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            export PATH="/opt/alt/alt-nodejs22/root/usr/bin:$PATH"
+            cd /home/viajeros/nodejs-app
+            # Backup current
+            cp .env .env.backup 2>/dev/null || true
+            # Extract new build
+            tar -xzf /home/viajeros/deploy.tar.gz -C /home/viajeros/nodejs-app --strip-components=0
+            # Restore env
+            cp .env.backup .env 2>/dev/null || true
+            # Rebuild native modules
+            npm rebuild better-sqlite3
+            cd node_modules/@prisma/adapter-better-sqlite3 && npm rebuild better-sqlite3 && cd /home/viajeros/nodejs-app
+            # Restart Passenger
+            touch tmp/restart.txt
+            echo "Deploy complete!"
