@@ -34,20 +34,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Prepare standalone
-        run: |
-          mkdir -p standalone
-          cp -r .next/standalone/* standalone/
-          mkdir -p standalone/.next/static
-          cp -r .next/static/* standalone/.next/static/
-          cp -r public standalone/public
-          mkdir -p standalone/prisma
-          cp prisma/dev.db standalone/prisma/dev.db
-          cp .env standalone/.env
-          cp -r prisma standalone/prisma
-
       - name: Create deploy tar
-        run: tar -czf deploy.tar.gz standalone/
+        run: tar -czf deploy.tar.gz --exclude='node_modules/.cache' --exclude='.next/cache' .next/ prisma/ server.js package.json package-lock.json next.config.ts tsconfig.json .env node_modules/
 
       - name: Upload to server
         uses: appleboy/scp-action@v0.1.7
@@ -71,17 +59,13 @@ jobs:
             cd /home/viajeros/nodejs-app
             kill -9 $(ps aux | grep 'node server.js' | grep -v grep | awk '{print $2}') 2>/dev/null || true
             sleep 2
-            rm -rf /home/viajeros/nodejs-app/standalone
+            cp .env .env.backup 2>/dev/null || true
+            rm -rf .next node_modules prisma standalone
             tar -xzf /home/viajeros/deploy.tar.gz -C /home/viajeros/nodejs-app
-            cd /home/viajeros/nodejs-app/standalone
-            # Rebuild native better-sqlite3
-            rm -f node_modules/better-sqlite3/build/Release/better_sqlite3.node
-            rm -f node_modules/@prisma/adapter-better-sqlite3/build/Release/better_sqlite3.node
-            cd node_modules/better-sqlite3 && npm run build-release && cd /home/viajeros/nodejs-app/standalone
+            cp .env.backup .env 2>/dev/null || true
+            # Rebuild ONLY the native binary - DO NOT run npm ci
+            cd node_modules/better-sqlite3 && npm run build-release && cd /home/viajeros/nodejs-app
+            mkdir -p node_modules/@prisma/adapter-better-sqlite3/build/Release
             cp node_modules/better-sqlite3/build/Release/better_sqlite3.node node_modules/@prisma/adapter-better-sqlite3/build/Release/
-            # Copy env and db
-            cp ../.env .env
-            mkdir -p prisma && cp ../prisma/dev.db prisma/dev.db
             mkdir -p tmp
-            PORT=3000 nohup node server.js > /dev/null 2>&1 &
             echo "Deploy complete!"
