@@ -21,7 +21,7 @@ jobs:
 
       - name: Create .env
         run: |
-          echo "DATABASE_URL=file:./dev.db" >> .env
+          echo "DATABASE_URL=file:./prisma/dev.db" >> .env
           echo "BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}" >> .env
           echo "BETTER_AUTH_URL=https://viajerosradio.uy" >> .env
           echo "ADMIN_EMAIL=viajerosdelfolklore@hotmail.com" >> .env
@@ -35,7 +35,7 @@ jobs:
         run: npm run build
 
       - name: Create deploy tar
-        run: tar -czf deploy.tar.gz .next/ prisma/ server.js package.json package-lock.json next.config.ts tsconfig.json .env node_modules/
+        run: tar -czf deploy.tar.gz .next/ prisma/ server.js package.json package-lock.json next.config.ts tsconfig.json .env
 
       - name: Upload to server
         uses: appleboy/scp-action@v0.1.7
@@ -60,6 +60,8 @@ jobs:
             cp .env .env.backup 2>/dev/null || true
             tar -xzf /home/viajeros/deploy.tar.gz -C /home/viajeros/nodejs-app
             cp .env.backup .env 2>/dev/null || true
+            rm -rf node_modules .next/node_modules
+            npm ci --omit=dev
             npm rebuild better-sqlite3
             cd node_modules/@prisma/adapter-better-sqlite3 && npm rebuild better-sqlite3 && cd /home/viajeros/nodejs-app
             touch tmp/restart.txt
