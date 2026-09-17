@@ -38,8 +38,10 @@ jobs:
         run: |
           mkdir -p standalone
           cp -r .next/standalone/* standalone/
-          cp -r .next/static standalone/.next/static
+          mkdir -p standalone/.next/static
+          cp -r .next/static/* standalone/.next/static/
           cp -r public standalone/public
+          mkdir -p standalone/prisma
           cp prisma/dev.db standalone/prisma/dev.db
           cp .env standalone/.env
           cp -r prisma standalone/prisma
