@@ -73,10 +73,9 @@ jobs:
             rm -rf .next node_modules prisma standalone
             tar -xzf /home/viajeros/deploy.tar.gz -C /home/viajeros/nodejs-app
             cp .env.backup .env 2>/dev/null || true
-            # Rebuild ONLY the native binary - DO NOT run npm ci
-            cd node_modules/better-sqlite3 && npm run build-release && cd /home/viajeros/nodejs-app
+            # Copy prebuilt binary to adapter location
             mkdir -p node_modules/@prisma/adapter-better-sqlite3/build/Release
-            cp node_modules/better-sqlite3/build/Release/better_sqlite3.node node_modules/@prisma/adapter-better-sqlite3/build/Release/
+            cp node_modules/better-sqlite3/build/Release/better_sqlite3.node node_modules/@prisma/adapter-better-sqlite3/build/Release/ 2>/dev/null || true
             # Fix Turbopack hashed module resolution
             HASH=$(grep -oP '@prisma/client-[a-f0-9]+' .next/server/chunks/ssr/*.js 2>/dev/null | head -1 | sed 's/.*@prisma\///')
             if [ -n "$HASH" ]; then
