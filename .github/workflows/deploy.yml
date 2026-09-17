@@ -67,5 +67,11 @@ jobs:
             cd node_modules/better-sqlite3 && npm run build-release && cd /home/viajeros/nodejs-app
             mkdir -p node_modules/@prisma/adapter-better-sqlite3/build/Release
             cp node_modules/better-sqlite3/build/Release/better_sqlite3.node node_modules/@prisma/adapter-better-sqlite3/build/Release/
+            # Fix Turbopack hashed module resolution
+            HASH=$(grep -oP '@prisma/client-[a-f0-9]+' .next/server/chunks/ssr/*.js 2>/dev/null | head -1 | sed 's/.*@prisma\///')
+            if [ -n "$HASH" ]; then
+              ln -sfn client "node_modules/@prisma/$HASH"
+              echo "Created symlink: @prisma/$HASH -> client"
+            fi
             mkdir -p tmp
             echo "Deploy complete!"
