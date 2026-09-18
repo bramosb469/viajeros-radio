@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3", "@prisma/client"],
+  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3", "@prisma/client", "better-auth", "kysely", "@better-auth/core", "@better-auth/kysely-adapter", "@better-auth/memory-adapter"],
   async redirects() {
     return [
       {

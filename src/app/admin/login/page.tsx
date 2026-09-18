@@ -1,15 +1,7 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth-helpers";
 import LoginForm from "./LoginForm";
 import styles from "./login.module.css";
 
 export default async function AdminLoginPage() {
-  const session = await getSession();
-
-  if (session?.user?.role === "admin") {
-    redirect("/admin");
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.card}>
