@@ -3,17 +3,19 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import path from 'node:path';
 import fs from 'fs';
-import { prisma as sharedPrisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-function bigIntReplacer(_key: string, value: any) {
-  if (typeof value === 'bigint') return Number(value);
-  return value;
+function safeStringify(obj: any) {
+  return JSON.stringify(obj, (_key, value) =>
+    typeof value === 'bigint' ? Number(value) : value
+  );
 }
 
 export async function GET() {
   const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+  const adapter = new PrismaBetterSqlite3({ url: dbPath });
+  const client = new PrismaClient({ adapter });
   const results: Record<string, any> = {
     timestamp: new Date().toISOString(),
     cwd: process.cwd(),
@@ -22,112 +24,77 @@ export async function GET() {
     dbSize: fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0,
   };
 
-  // Test with FRESH PrismaClient
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const freshPrisma = new PrismaClient({ adapter });
-
   try {
-    results.fresh_programCount = await freshPrisma.program.count();
+    const tables = await client.$queryRawUnsafe<{name: string}[]>(
+      "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+    );
+    results.tables = tables.map(t => t.name);
   } catch (e: any) {
-    results.fresh_programError = e.message;
+    results.tablesError = e.message;
   }
 
   try {
-    const programs = await freshPrisma.program.findMany({ include: { schedules: true } });
-    results.fresh_programs = programs;
+    results.siteSettings = await client.siteSettings.findFirst() ? 'EXISTS' : 'EMPTY';
   } catch (e: any) {
-    results.fresh_programsError = e.message;
+    results.siteSettingsError = e.message;
   }
 
   try {
-    results.fresh_eventCount = await freshPrisma.event.count();
+    results.menuItemCount = await client.menuItem.count();
   } catch (e: any) {
-    results.fresh_eventError = e.message;
+    results.menuItemError = e.message;
   }
 
   try {
-    const events = await freshPrisma.event.findMany();
-    results.fresh_events = events;
+    results.programCount = await client.program.count();
   } catch (e: any) {
-    results.fresh_eventsError = e.message;
+    results.programError = e.message;
   }
 
   try {
-    results.fresh_siteSettings = await freshPrisma.siteSettings.findFirst() ? 'EXISTS' : 'EMPTY';
+    const programs = await client.program.findMany({ include: { schedules: true } });
+    results.programs = programs;
   } catch (e: any) {
-    results.fresh_siteSettingsError = e.message;
+    results.programsQueryError = e.message;
   }
 
   try {
-    results.fresh_menuItemCount = await freshPrisma.menuItem.count();
+    results.eventCount = await client.event.count();
   } catch (e: any) {
-    results.fresh_menuItemError = e.message;
-  }
-
-  await freshPrisma.$disconnect();
-
-  // Test with SHARED singleton
-  try {
-    results.shared_programCount = await sharedPrisma.program.count();
-  } catch (e: any) {
-    results.shared_programError = e.message;
+    results.eventError = e.message;
   }
 
   try {
-    const programs = await sharedPrisma.program.findMany({ include: { schedules: true } });
-    results.shared_programs = programs;
+    const events = await client.event.findMany();
+    results.events = events;
   } catch (e: any) {
-    results.shared_programsError = e.message;
+    results.eventsQueryError = e.message;
   }
 
   try {
-    results.shared_eventCount = await sharedPrisma.event.count();
-  } catch (e: any) {
-    results.shared_eventError = e.message;
-  }
-
-  try {
-    results.shared_events = await sharedPrisma.event.findMany();
-  } catch (e: any) {
-    results.shared_eventsError = e.message;
-  }
-
-  try {
-    results.shared_siteSettings = await sharedPrisma.siteSettings.findFirst() ? 'EXISTS' : 'EMPTY';
-  } catch (e: any) {
-    results.shared_siteSettingsError = e.message;
-  }
-
-  try {
-    results.shared_menuItemCount = await sharedPrisma.menuItem.count();
-  } catch (e: any) {
-    results.shared_menuItemError = e.message;
-  }
-
-  // Raw SQL test
-  try {
-    const raw = await freshPrisma.$queryRawUnsafe('SELECT id, name, active FROM Program');
+    const raw = await client.$queryRawUnsafe('SELECT id, name, active FROM Program');
     results.rawPrograms = raw;
   } catch (e: any) {
     results.rawProgramError = e.message;
   }
 
   try {
-    const raw = await freshPrisma.$queryRawUnsafe('SELECT id, title, status FROM Event');
+    const raw = await client.$queryRawUnsafe('SELECT id, title, status FROM Event');
     results.rawEvents = raw;
   } catch (e: any) {
     results.rawEventError = e.message;
   }
 
-  // Write log file
+  await client.$disconnect();
+
   try {
     fs.writeFileSync(
       path.join(process.cwd(), 'debug-db.log'),
-      JSON.stringify(results, null, 2, bigIntReplacer)
+      safeStringify(results)
     );
   } catch {}
 
-  return new NextResponse(JSON.stringify(results, bigIntReplacer), {
+  return new NextResponse(safeStringify(results), {
     headers: { 'Content-Type': 'application/json' },
   });
 }

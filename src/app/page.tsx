@@ -1,5 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { PrismaClient } from '@prisma/client';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import path from 'node:path';
 import { prisma } from '@/lib/db';
 import ListenButton from '@/components/player/ListenButton';
 import styles from './page.module.css';
@@ -41,20 +44,27 @@ function getYouTubeId(url: string) {
   return match && match[2].length === 11 ? match[2] : null;
 }
 
+function createClient() {
+  const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+  const adapter = new PrismaBetterSqlite3({ url: dbPath });
+  return new PrismaClient({ adapter });
+}
+
 export default async function Home() {
   let siteSettings = null;
   let programs: ProgramWithSchedules[] = [];
   let upcomingEvents: any[] = [];
   let recentVideos: any[] = [];
 
+  const client = createClient();
   try {
-    siteSettings = await prisma.siteSettings.findFirst();
-    programs = await prisma.program.findMany({
+    siteSettings = await client.siteSettings.findFirst();
+    programs = await client.program.findMany({
       include: {
         schedules: true
       }
     });
-    upcomingEvents = await prisma.event.findMany({
+    upcomingEvents = await client.event.findMany({
       where: { 
         status: 'publicado',
         featured: true
@@ -62,13 +72,15 @@ export default async function Home() {
       take: 3,
       orderBy: { eventDate: 'asc' }
     });
-    recentVideos = await prisma.video.findMany({
+    recentVideos = await client.video.findMany({
       where: { visible: true },
       take: 4,
       orderBy: { createdAt: 'desc' }
     });
   } catch (error) {
     console.error('Error fetching home data:', error);
+  } finally {
+    await client.$disconnect();
   }
 
   const currentProgram = getCurrentProgram(programs);
