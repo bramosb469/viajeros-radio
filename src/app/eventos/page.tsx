@@ -1,7 +1,5 @@
 import { Metadata } from 'next';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import path from 'node:path';
+import prisma from '@/lib/db';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -19,24 +17,11 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-async function getEventos() {
-  const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const client = new PrismaClient({ adapter });
-  try {
-    const eventos = await client.event.findMany({
-      where: { status: 'publicado' },
-      orderBy: { eventDate: 'desc' },
-    });
-    console.log('[EVENTOS] Fresh client count:', eventos.length);
-    return eventos;
-  } finally {
-    await client.$disconnect();
-  }
-}
-
 export default async function EventosPage() {
-  const eventos = await getEventos();
+  const eventos = await prisma.event.findMany({
+    where: { status: 'publicado' },
+    orderBy: { eventDate: 'desc' },
+  });
 
   const now = new Date();
   now.setHours(0, 0, 0, 0);

@@ -1,8 +1,5 @@
 import { Metadata } from 'next';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import path from 'node:path';
-import fs from 'fs';
+import prisma from '@/lib/db';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -22,26 +19,11 @@ const daysOfWeek = [
   { id: 0, name: 'Domingo' },
 ];
 
-async function getActivePrograms() {
-  const dbPath = path.join(process.cwd(), 'prisma', 'dev.db');
-  const adapter = new PrismaBetterSqlite3({ url: dbPath });
-  const client = new PrismaClient({ adapter });
-  try {
-    const programs = await client.program.findMany({
-      where: { active: true },
-      include: { schedules: true },
-    });
-    console.log('[PROGRAMACION] Fresh client count:', programs.length);
-    return programs;
-  } finally {
-    await client.$disconnect();
-  }
-}
-
 export default async function ProgramacionPage() {
-  const activePrograms = await getActivePrograms();
-
-  console.log('[PROGRAMACION] activePrograms count:', activePrograms.length);
+  const activePrograms = await prisma.program.findMany({
+    where: { active: true },
+    include: { schedules: true },
+  });
 
   const currentDay = new Date().getDay();
 
