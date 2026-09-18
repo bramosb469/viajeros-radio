@@ -3,6 +3,8 @@ import prisma from '@/lib/db';
 import ContactForm from '@/components/sections/ContactForm';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Contacto - Viajeros Radio',
   description: 'Comunicate con Viajeros Radio. Mándanos tu mensaje o visítanos en nuestras redes.',

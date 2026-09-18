@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import ListenButton from '@/components/player/ListenButton';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+
 type ProgramSchedule = {
   id: number;
   dayOfWeek: number;

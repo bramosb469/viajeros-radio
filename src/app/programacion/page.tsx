@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import prisma from '@/lib/db';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Programación - Viajeros Radio',
   description: 'Conoce nuestra grilla semanal de programas. Viajeros Radio, sencillito y de alpargatas.',

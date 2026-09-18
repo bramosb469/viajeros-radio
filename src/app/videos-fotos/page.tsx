@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import prisma from '@/lib/db';
 import TabsContent from './TabsContent';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Videos y Fotos - Viajeros Radio',
   description: 'Revive los mejores momentos de Viajeros Radio en nuestra galería multimedia.',
