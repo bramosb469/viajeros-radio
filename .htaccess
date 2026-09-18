@@ -1,0 +1,3 @@
+# Disable LSCache for this application
+LSCacheEngine Off
+CacheControl no-cache

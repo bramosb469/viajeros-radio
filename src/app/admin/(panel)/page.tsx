@@ -13,14 +13,14 @@ export default async function AdminDashboardPage() {
     menuItems,
     team,
   ] = await Promise.all([
-    prisma.program.count(),
-    prisma.event.count(),
-    prisma.video.count(),
-    prisma.album.count(),
-    prisma.contactMessage.count(),
-    prisma.contactMessage.count({ where: { read: false } }),
-    prisma.menuItem.count(),
-    prisma.teamMember.count(),
+    prisma.program.count().then(Number),
+    prisma.event.count().then(Number),
+    prisma.video.count().then(Number),
+    prisma.album.count().then(Number),
+    prisma.contactMessage.count().then(Number),
+    prisma.contactMessage.count({ where: { read: false } }).then(Number),
+    prisma.menuItem.count().then(Number),
+    prisma.teamMember.count().then(Number),
   ]);
 
   return (
