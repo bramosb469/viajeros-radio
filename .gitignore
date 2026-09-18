@@ -44,6 +44,9 @@ next-env.d.ts
 *.zip
 *.sh
 *.bat
+*.tar.gz
+.htaccess
+public/.htaccess
 AGENTS.md
 CLAUDE.md
 DEPLOY-README.txt
