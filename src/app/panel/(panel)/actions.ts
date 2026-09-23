@@ -95,7 +95,7 @@ export async function createResource(key: ModelKey, formData: FormData) {
   }
 
   revalidatePath("/");
-  revalidatePath("/admin/" + resource.slug);
+  revalidatePath("/panel/" + resource.slug);
   return { ok: true };
 }
 
@@ -124,7 +124,7 @@ export async function updateResource(key: ModelKey, id: number, formData: FormDa
   }
 
   revalidatePath("/");
-  revalidatePath("/admin/" + resource.slug);
+  revalidatePath("/panel/" + resource.slug);
   return { ok: true };
 }
 
@@ -136,7 +136,7 @@ export async function deleteResource(key: ModelKey, id: number) {
   await model.delete({ where: { id } });
 
   revalidatePath("/");
-  revalidatePath("/admin/" + resource.slug);
+  revalidatePath("/panel/" + resource.slug);
 }
 
 // Mensajes
@@ -172,10 +172,10 @@ export async function toggleMessageRead(id: number) {
     where: { id },
     data: { read: !msg?.read },
   });
-  revalidatePath("/admin/mensajes");
+  revalidatePath("/panel/mensajes");
 }
 
 export async function deleteMessage(id: number) {
   await prisma.contactMessage.delete({ where: { id } });
-  revalidatePath("/admin/mensajes");
+  revalidatePath("/panel/mensajes");
 }

@@ -27,7 +27,7 @@ async function fetchSession() {
 export async function requireAdmin() {
   const session = await fetchSession();
   if (!session?.user) {
-    redirect("/admin/login");
+    redirect("/panel/login");
   }
   if (session.user.role !== "admin") {
     redirect("/");

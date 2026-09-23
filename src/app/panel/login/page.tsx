@@ -1,7 +1,7 @@
 import LoginForm from "./LoginForm";
 import styles from "./login.module.css";
 
-export default async function AdminLoginPage() {
+export default function AdminLoginPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>

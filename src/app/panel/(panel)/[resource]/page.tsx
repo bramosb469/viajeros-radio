@@ -29,7 +29,7 @@ export default async function ResourceListPage({
           <h2 className={styles.sectionTitle}>{def.labelPlural}</h2>
           <p className={styles.sectionDesc}>{def.description}</p>
         </div>
-        <Link href={`/admin/${def.slug}/nuevo`} className={styles.addBtn}>
+        <Link href={`/panel/${def.slug}/nuevo`} className={styles.addBtn}>
           + Nuevo {def.label}
         </Link>
       </div>
@@ -79,7 +79,7 @@ export default async function ResourceListPage({
                       )}
                     </td>
                     <td className={styles.tableActions}>
-                      <Link href={`/admin/${def.slug}/${item.id}`} className={styles.editBtn}>
+                      <Link href={`/panel/${def.slug}/${item.id}`} className={styles.editBtn}>
                         Editar
                       </Link>
                       <form action={deleteResource.bind(null, def.key, item.id)}>

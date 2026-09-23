@@ -44,7 +44,7 @@ export default async function ResourceFormPage({
           </h2>
           <p className={styles.sectionDesc}>{def.description}</p>
         </div>
-        <Link href={`/admin/${def.slug}`} className={styles.backBtn}>
+        <Link href={`/panel/${def.slug}`} className={styles.backBtn}>
           ← Volver
         </Link>
       </div>

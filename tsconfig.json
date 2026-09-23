@@ -12,7 +12,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "incremental": true,
+    "incremental": false,
+    "baseUrl": ".",
+    "allowImportingTsExtensions": true,
     "plugins": [
       {
         "name": "next"

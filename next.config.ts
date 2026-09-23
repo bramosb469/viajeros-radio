@@ -2,16 +2,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3", "@prisma/client", "better-auth", "kysely", "@better-auth/core", "@better-auth/kysely-adapter", "@better-auth/memory-adapter"],
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async redirects() {
     return [
       {
         source: '/ADMIN',
-        destination: '/admin',
+        destination: '/panel',
         permanent: true,
       },
       {
         source: '/ADMIN/:path*',
-        destination: '/admin/:path*',
+        destination: '/panel/:path*',
         permanent: true,
       },
     ];

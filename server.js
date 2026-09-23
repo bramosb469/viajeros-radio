@@ -104,6 +104,15 @@ app.prepare().then(() => {
       return;
     }
 
+    if (parsedUrl.pathname.startsWith('/admin')) {
+      try {
+        fs.appendFileSync(
+          path.join(__dirname, 'admin-debug.log'),
+          new Date().toISOString() + ' ' + req.method + ' url=' + req.url + ' pathname=' + parsedUrl.pathname + ' host=' + (req.headers.host || '') + '\n'
+        );
+      } catch (e) { /* ignore */ }
+    }
+
     handle(req, res, parsedUrl);
   }).listen(process.env.PORT || 3000, () => {
     console.log('> Ready on port ' + (process.env.PORT || 3000));

@@ -6,18 +6,18 @@ import { usePathname } from "next/navigation";
 import styles from "./admin.module.css";
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: "📊" },
-  { href: "/admin/mensajes", label: "Mensajes", icon: "✉️" },
-  { href: "/admin/programas", label: "Programas", icon: "🎙️" },
-  { href: "/admin/eventos", label: "Eventos", icon: "📅" },
-  { href: "/admin/videos", label: "Videos", icon: "🎬" },
-  { href: "/admin/albumes", label: "Álbumes / Fotos", icon: "📸" },
-  { href: "/admin/menu", label: "Menú", icon: "🧭" },
-  { href: "/admin/redes", label: "Redes Sociales", icon: "🔗" },
-  { href: "/admin/contacto-info", label: "Info de Contacto", icon: "☎️" },
-  { href: "/admin/nosotros", label: "Secciones Nosotros", icon: "📖" },
-  { href: "/admin/equipo", label: "Equipo", icon: "👥" },
-  { href: "/admin/ajustes", label: "Ajustes", icon: "⚙️" },
+  { href: "/panel", label: "Dashboard", icon: "📊" },
+  { href: "/panel/mensajes", label: "Mensajes", icon: "✉️" },
+  { href: "/panel/programas", label: "Programas", icon: "🎙️" },
+  { href: "/panel/eventos", label: "Eventos", icon: "📅" },
+  { href: "/panel/videos", label: "Videos", icon: "🎬" },
+  { href: "/panel/albumes", label: "Álbumes / Fotos", icon: "📸" },
+  { href: "/panel/menu", label: "Menú", icon: "🧭" },
+  { href: "/panel/redes", label: "Redes Sociales", icon: "🔗" },
+  { href: "/panel/contacto-info", label: "Info de Contacto", icon: "☎️" },
+  { href: "/panel/nosotros", label: "Secciones Nosotros", icon: "📖" },
+  { href: "/panel/equipo", label: "Equipo", icon: "👥" },
+  { href: "/panel/ajustes", label: "Ajustes", icon: "⚙️" },
 ];
 
 export default function Sidebar({ userEmail }: { userEmail: string }) {
@@ -25,7 +25,7 @@ export default function Sidebar({ userEmail }: { userEmail: string }) {
   const [open, setOpen] = useState(false);
 
   const isActive = (href: string) =>
-    href === "/admin" ? pathname === href : pathname.startsWith(href);
+    href === "/panel" ? pathname === href : pathname.startsWith(href);
 
   return (
     <>
@@ -39,7 +39,7 @@ export default function Sidebar({ userEmail }: { userEmail: string }) {
 
       <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ""}`}>
         <div className={styles.brand}>
-          <Link href="/admin">
+          <Link href="/panel">
             <img src="/logo.jpg" alt="Viajeros Radio" className={styles.logo} />
             <span className={styles.brandName}>Viajeros Radio</span>
           </Link>

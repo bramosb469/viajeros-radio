@@ -54,7 +54,7 @@ export default function ResourceForm({
       : await createResource(resourceKey as any, formData);
 
     if (result.ok) {
-      router.push(`/admin/${resourceSlug}`);
+      router.push(`/panel/${resourceSlug}`);
       router.refresh();
     } else {
       setError(result.error || "Error al guardar");
@@ -341,7 +341,7 @@ export default function ResourceForm({
         <button
           type="button"
           className={styles.cancelBtn}
-          onClick={() => router.push(`/admin/${resourceSlug}`)}
+          onClick={() => router.push(`/panel/${resourceSlug}`)}
         >
           Cancelar
         </button>

@@ -26,13 +26,13 @@ export default async function AdminDashboardPage() {
   return (
     <div>
       <div className={styles.statsGrid}>
-        <StatCard title="Mensajes" value={messages} href="/admin/mensajes" highlight={unreadMessages > 0} badge={unreadMessages} />
-        <StatCard title="Programas" value={programs} href="/admin/programas" />
-        <StatCard title="Eventos" value={events} href="/admin/eventos" />
-        <StatCard title="Videos" value={videos} href="/admin/videos" />
-        <StatCard title="Álbumes de fotos" value={albums} href="/admin/albumes" />
-        <StatCard title="Ítems de menú" value={menuItems} href="/admin/menu" />
-        <StatCard title="Equipo" value={team} href="/admin/equipo" />
+        <StatCard title="Mensajes" value={messages} href="/panel/mensajes" highlight={unreadMessages > 0} badge={unreadMessages} />
+        <StatCard title="Programas" value={programs} href="/panel/programas" />
+        <StatCard title="Eventos" value={events} href="/panel/eventos" />
+        <StatCard title="Videos" value={videos} href="/panel/videos" />
+        <StatCard title="Álbumes de fotos" value={albums} href="/panel/albumes" />
+        <StatCard title="Ítems de menú" value={menuItems} href="/panel/menu" />
+        <StatCard title="Equipo" value={team} href="/panel/equipo" />
       </div>
     </div>
   );
