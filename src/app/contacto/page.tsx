@@ -25,6 +25,10 @@ export default async function ContactoPage() {
 
   const settingsItems: { label: string; value: string; href?: string }[] = [];
   let contactName = '';
+  // Texto predeterminado para los links de WhatsApp (se configura en Ajustes).
+  const waText = settings?.whatsappMessage?.trim()
+    ? `?text=${encodeURIComponent(settings.whatsappMessage.trim())}`
+    : '';
   if (settings?.contactName) {
     contactName = settings.contactName;
     settingsItems.push({ label: 'Contacto', value: settings.contactName });
@@ -33,7 +37,7 @@ export default async function ContactoPage() {
     settingsItems.push({
       label: 'WhatsApp',
       value: settings.whatsappNumber,
-      href: `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}`,
+      href: `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}${waText}`,
     });
   }
   if (settings?.contactEmail) {
@@ -79,7 +83,7 @@ export default async function ContactoPage() {
                   <li key={info.id}>
                     <strong>{info.name}:</strong>{" "}
                     {info.whatsapp ? (
-                      <a href={`https://wa.me/${info.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
+                      <a href={`https://wa.me/${info.whatsapp.replace(/[^0-9]/g, "")}${waText}`} target="_blank" rel="noopener noreferrer">
                         {info.whatsapp}
                       </a>
                     ) : (
