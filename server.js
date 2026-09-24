@@ -24,14 +24,14 @@ BigInt.prototype.toJSON = function () {
 };
 
 // Auto-respaldo de la DB al iniciar (defensa ante reemplazos externos del
-// archivo dev.db): si no hay ningún respaldo de las últimas 20h, copiar la
-// DB actual a prisma/backups/. Aparecen en Panel → Ajustes → Respaldos.
+// archivo dev.db): si no hay ningún respaldo de los últimos 30 minutos,
+// copiar la DB actual a prisma/backups/. Aparecen en Panel → Ajustes → Respaldos.
 try {
   const adbPath = path.join(__dirname, 'prisma', 'dev.db');
   const abDir = path.join(__dirname, 'prisma', 'backups');
   if (fs.existsSync(adbPath)) {
     fs.mkdirSync(abDir, { recursive: true });
-    const limit = Date.now() - 20 * 3600 * 1000;
+    const limit = Date.now() - 30 * 60 * 1000;
     const hasRecent = fs.readdirSync(abDir).some((n) => {
       if (!/^dev-\d{14}\.db$/.test(n)) return false;
       try { return fs.statSync(path.join(abDir, n)).mtimeMs > limit; }
