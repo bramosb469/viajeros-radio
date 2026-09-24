@@ -115,6 +115,144 @@ app.prepare().then(() => {
       return;
     }
 
+    // Backup / restore de la base SQLite (solo admin).
+    // Se maneja acá (no en un Route Handler) para poder validar la
+    // sesión con authApi, igual que /api/auth/session.
+    if (parsedUrl.pathname.startsWith('/api/backup/')) {
+      try {
+        const bHeaders = new Headers();
+        for (const [key, val] of Object.entries(req.headers)) {
+          if (val) bHeaders.set(key, Array.isArray(val) ? val.join(', ') : val);
+        }
+        let bSession = null;
+        try {
+          if (authApi) bSession = await authApi.getSession({ headers: bHeaders });
+        } catch (e) { bSession = null; }
+        if (!bSession || !bSession.user || bSession.user.role !== 'admin') {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'No autorizado' }));
+          return;
+        }
+
+        const backupDir = path.join(__dirname, 'prisma', 'backups');
+        const dbPath = path.join(__dirname, 'prisma', 'dev.db');
+        const nameOk = (n) => /^dev-\d{14}\.db$/.test(n || '');
+        const listBackups = () => {
+          if (!fs.existsSync(backupDir)) return [];
+          return fs.readdirSync(backupDir)
+            .filter(nameOk)
+            .map((name) => {
+              const st = fs.statSync(path.join(backupDir, name));
+              return { name, size: st.size, mtime: st.mtime.toISOString() };
+            })
+            .sort((a, b) => (a.name < b.name ? 1 : -1));
+        };
+        const readJsonBody = () => new Promise((resolve, reject) => {
+          const chunks = [];
+          req.on('data', (c) => chunks.push(c));
+          req.on('end', () => {
+            try { resolve(JSON.parse(Buffer.concat(chunks).toString() || '{}')); }
+            catch (e) { reject(e); }
+          });
+          req.on('error', reject);
+        });
+        const stamp = () => new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+
+        if (parsedUrl.pathname === '/api/backup/list' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ backups: listBackups() }));
+          return;
+        }
+
+        if (parsedUrl.pathname === '/api/backup/create' && req.method === 'POST') {
+          fs.mkdirSync(backupDir, { recursive: true });
+          const name = 'dev-' + stamp() + '.db';
+          fs.copyFileSync(dbPath, path.join(backupDir, name));
+          listBackups().slice(10).forEach((b) => {
+            try { fs.unlinkSync(path.join(backupDir, b.name)); } catch (e) { /* ignore */ }
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, name }));
+          return;
+        }
+
+        if (parsedUrl.pathname === '/api/backup/download' && req.method === 'GET') {
+          const name = parsedUrl.query.name;
+          if (!nameOk(name)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Nombre inválido' }));
+            return;
+          }
+          const p = path.join(backupDir, name);
+          if (!fs.existsSync(p)) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'No encontrado' }));
+            return;
+          }
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="' + name + '"',
+            'Content-Length': String(fs.statSync(p).size),
+          });
+          fs.createReadStream(p).pipe(res);
+          return;
+        }
+
+        if (parsedUrl.pathname === '/api/backup/restore' && req.method === 'POST') {
+          const bbody = await readJsonBody();
+          const name = bbody && bbody.name;
+          if (!nameOk(name)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Nombre inválido' }));
+            return;
+          }
+          const p = path.join(backupDir, name);
+          if (!fs.existsSync(p)) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'No encontrado' }));
+            return;
+          }
+          fs.mkdirSync(backupDir, { recursive: true });
+          try {
+            if (fs.existsSync(dbPath)) {
+              fs.copyFileSync(dbPath, path.join(backupDir, 'dev-' + stamp() + '.db'));
+            }
+          } catch (e) { /* ignore */ }
+          fs.copyFileSync(p, dbPath);
+          try {
+            fs.mkdirSync(path.join(__dirname, 'tmp'), { recursive: true });
+            fs.writeFileSync(path.join(__dirname, 'tmp', 'restart.txt'), String(Date.now()));
+          } catch (e) { /* ignore */ }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+          return;
+        }
+
+        if (parsedUrl.pathname === '/api/backup/delete' && req.method === 'POST') {
+          const bbody = await readJsonBody();
+          const name = bbody && bbody.name;
+          if (!nameOk(name)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Nombre inválido' }));
+            return;
+          }
+          try { fs.unlinkSync(path.join(backupDir, name)); } catch (e) { /* ignore */ }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+          return;
+        }
+
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No encontrado' }));
+        return;
+      } catch (e) {
+        console.error('[backup error]', e.message);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+
     if (parsedUrl.pathname.startsWith('/admin')) {
       try {
         fs.appendFileSync(
