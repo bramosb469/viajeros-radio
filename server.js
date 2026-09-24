@@ -23,13 +23,15 @@ BigInt.prototype.toJSON = function () {
   return Number(this);
 };
 
-// Auto-respaldo de la DB al iniciar (defensa ante reemplazos externos del
-// archivo dev.db): si no hay ningún respaldo de los últimos 30 minutos,
-// copiar la DB actual a prisma/backups/. Aparecen en Panel → Ajustes → Respaldos.
-try {
-  const adbPath = path.join(__dirname, 'prisma', 'dev.db');
-  const abDir = '/home/viajeros/db-backups';
-  if (fs.existsSync(adbPath)) {
+// Auto-respaldo de la DB (defensa ante reemplazos externos del archivo
+// dev.db): al iniciar y luego cada 30 minutos, si no hay ningún respaldo
+// reciente, copiar la DB actual a /home/viajeros/db-backups/ (fuera de la
+// app, donde los reemplazos no llegan). Aparecen en Panel → Ajustes → Respaldos.
+function autoBackupIfStale() {
+  try {
+    const adbPath = path.join(__dirname, 'prisma', 'dev.db');
+    const abDir = '/home/viajeros/db-backups';
+    if (!fs.existsSync(adbPath)) return;
     fs.mkdirSync(abDir, { recursive: true });
     const limit = Date.now() - 30 * 60 * 1000;
     const hasRecent = fs.readdirSync(abDir).some((n) => {
@@ -37,13 +39,18 @@ try {
       try { return fs.statSync(path.join(abDir, n)).mtimeMs > limit; }
       catch (e) { return false; }
     });
-    if (!hasRecent) {
-      const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-      fs.copyFileSync(adbPath, path.join(abDir, 'dev-' + stamp + '.db'));
-      console.log('[server.js] Auto-backup DB creado');
-    }
-  }
-} catch (e) { console.error('[server.js] Auto-backup error:', e.message); }
+    if (hasRecent) return;
+    const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+    fs.copyFileSync(adbPath, path.join(abDir, 'dev-' + stamp + '.db'));
+    const all = fs.readdirSync(abDir).filter((n) => /^dev-\d{14}\.db$/.test(n)).sort();
+    all.slice(0, Math.max(0, all.length - 48)).forEach((n) => {
+      try { fs.unlinkSync(path.join(abDir, n)); } catch (e) { /* ignore */ }
+    });
+    console.log('[server.js] Auto-backup DB creado');
+  } catch (e) { console.error('[server.js] Auto-backup error:', e.message); }
+}
+autoBackupIfStale();
+setInterval(autoBackupIfStale, 30 * 60 * 1000);
 
 const next = require('next');
 const app = next({ dev: false });
