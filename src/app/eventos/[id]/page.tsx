@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import VideoEmbed from './VideoEmbed';
 import prisma from '@/lib/db';
 import styles from '../page.module.css';
 
@@ -90,12 +91,13 @@ export default async function EventoDetallePage({
         </div>
       )}
 
+      {evento.videoUrl && (
+        <div style={{ marginTop: '1.5rem' }}>
+          <VideoEmbed url={evento.videoUrl} title={evento.title} />
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-        {evento.videoUrl && (
-          <a href={evento.videoUrl} target="_blank" rel="noopener noreferrer">
-            Ver video
-          </a>
-        )}
         {evento.externalLink && (
           <a href={evento.externalLink} target="_blank" rel="noopener noreferrer">
             Más información
