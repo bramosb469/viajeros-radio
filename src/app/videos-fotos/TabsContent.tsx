@@ -18,9 +18,10 @@ interface Album {
 
 export default function TabsContent({ videos, albums }: { videos: Video[]; albums: Album[] }) {
   const [activeTab, setActiveTab] = useState<'videos' | 'fotos'>('videos');
+  const [playingId, setPlayingId] = useState<number | null>(null);
 
   const getYouTubeId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? match[2] : null;
   };
@@ -56,15 +57,64 @@ export default function TabsContent({ videos, albums }: { videos: Video[]; album
                   return (
                     <div key={video.id} className={styles.videoCard}>
                       {videoId ? (
-                        <div className={styles.iframeWrapper}>
-                          <iframe
-                            src={`https://www.youtube.com/embed/${videoId}`}
-                            title={video.title || 'YouTube Video'}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            loading="lazy"
-                          ></iframe>
-                        </div>
+                        playingId === video.id ? (
+                          <div className={styles.iframeWrapper}>
+                            <iframe
+                              src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                              title={video.title || 'YouTube Video'}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            ></iframe>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPlayingId(video.id)}
+                            className={styles.iframeWrapper}
+                            style={{
+                              position: 'relative',
+                              width: '100%',
+                              padding: 0,
+                              border: 'none',
+                              cursor: 'pointer',
+                              background: '#000',
+                            }}
+                            aria-label={`Reproducir ${video.title || 'video'}`}
+                          >
+                            <img
+                              src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+                              alt={video.title || 'Miniatura del video'}
+                              loading="lazy"
+                              style={{ width: '100%', display: 'block' }}
+                            />
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '68px',
+                                height: '48px',
+                                background: 'rgba(255,0,0,0.9)',
+                                borderRadius: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <span
+                                style={{
+                                  width: 0,
+                                  height: 0,
+                                  borderTop: '10px solid transparent',
+                                  borderBottom: '10px solid transparent',
+                                  borderLeft: '16px solid #fff',
+                                  marginLeft: '4px',
+                                }}
+                              />
+                            </span>
+                          </button>
+                        )
                       ) : (
                         <div className={styles.emptyState}>URL inválida</div>
                       )}
