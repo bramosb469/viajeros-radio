@@ -85,6 +85,17 @@ app.prepare().then(() => {
               })
             : undefined;
 
+          try {
+            fs.appendFileSync(
+              path.join(__dirname, 'auth-debug.log'),
+              new Date().toISOString() + ' ' + req.method + ' ' + parsedUrl.pathname +
+              ' ct=' + req.headers['content-type'] + ' cl=' + req.headers['content-length'] +
+              ' te=' + req.headers['transfer-encoding'] +
+              ' bodylen=' + (body ? body.length : 0) +
+              ' body=' + JSON.stringify((body || '').slice(0, 150)) + '\n'
+            );
+          } catch (e) { /* ignore */ }
+
           const request = new Request(fullUrl, {
             method: req.method,
             headers,
