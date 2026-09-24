@@ -28,7 +28,9 @@ function buildData(key: ModelKey, formData: FormData) {
   for (const field of resource.fields) {
     const raw = formData.get(field.name);
     const val = parseValue(raw, field.type);
-    if (val !== null || field.type !== "text") {
+    // Nunca mandar null explícito: los defaults de la DB solo aplican
+    // cuando el campo se omite (null explícito tira "must not be null").
+    if (val !== null) {
       data[field.name] = val;
     }
   }
@@ -76,8 +78,14 @@ function friendlyError(e: unknown, fallback: string) {
   if (code === "P2002") {
     return { ok: false as const, error: "Ya existe un registro con ese valor único" };
   }
-  const message = e instanceof Error ? e.message : String(e);
-  return { ok: false as const, error: message || fallback };
+  if (code === "P2012") {
+    return { ok: false as const, error: "Falta un dato obligatorio" };
+  }
+  if (code === "P2025") {
+    return { ok: false as const, error: "El registro ya no existe" };
+  }
+  console.error("[actions]", e instanceof Error ? e.message : e);
+  return { ok: false as const, error: fallback };
 }
 
 export async function createResource(key: ModelKey, formData: FormData) {
