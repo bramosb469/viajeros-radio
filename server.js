@@ -28,7 +28,7 @@ BigInt.prototype.toJSON = function () {
 // copiar la DB actual a prisma/backups/. Aparecen en Panel → Ajustes → Respaldos.
 try {
   const adbPath = path.join(__dirname, 'prisma', 'dev.db');
-  const abDir = path.join(__dirname, 'prisma', 'backups');
+  const abDir = '/home/viajeros/db-backups';
   if (fs.existsSync(adbPath)) {
     fs.mkdirSync(abDir, { recursive: true });
     const limit = Date.now() - 30 * 60 * 1000;
@@ -156,7 +156,7 @@ app.prepare().then(() => {
           return;
         }
 
-        const backupDir = path.join(__dirname, 'prisma', 'backups');
+        const backupDir = '/home/viajeros/db-backups';
         const dbPath = path.join(__dirname, 'prisma', 'dev.db');
         const nameOk = (n) => /^dev-\d{14}\.db$/.test(n || '');
         const listBackups = () => {
