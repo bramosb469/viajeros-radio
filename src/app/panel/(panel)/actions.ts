@@ -55,6 +55,31 @@ export async function saveSchedules(programId: number, schedulesJson: string) {
   return { ok: true };
 }
 
+// Modelos que tienen createdAt / updatedAt en el schema de Prisma.
+// createResource solo debe setear los timestamps que el modelo acepta;
+// el resto (Video sin updatedAt, MenuItem/SocialNetwork/ContactInfo/
+// AboutSection/TeamMember sin ninguno) tirarían "Unknown argument".
+const HAS_TIMESTAMPS: Record<ModelKey, { createdAt: boolean; updatedAt: boolean }> = {
+  program: { createdAt: true, updatedAt: true },
+  event: { createdAt: true, updatedAt: true },
+  video: { createdAt: true, updatedAt: false },
+  album: { createdAt: true, updatedAt: true },
+  menuItem: { createdAt: false, updatedAt: false },
+  socialNetwork: { createdAt: false, updatedAt: false },
+  contactInfo: { createdAt: false, updatedAt: false },
+  aboutSection: { createdAt: false, updatedAt: false },
+  teamMember: { createdAt: false, updatedAt: false },
+};
+
+function friendlyError(e: unknown, fallback: string) {
+  const code = (e as any)?.code;
+  if (code === "P2002") {
+    return { ok: false as const, error: "Ya existe un registro con ese valor único" };
+  }
+  const message = e instanceof Error ? e.message : String(e);
+  return { ok: false as const, error: message || fallback };
+}
+
 export async function createResource(key: ModelKey, formData: FormData) {
   const resource = getResource(key);
   if (!resource) throw new Error("Recurso no encontrado");
@@ -69,29 +94,39 @@ export async function createResource(key: ModelKey, formData: FormData) {
   }
 
   const data = buildData(key, formData);
-  data.createdAt = new Date();
-  data.updatedAt = new Date();
+  if (HAS_TIMESTAMPS[key].createdAt) data.createdAt = new Date();
+  if (HAS_TIMESTAMPS[key].updatedAt) data.updatedAt = new Date();
 
-  if (key === "program") {
-    const schedulesJson = formData.get("_schedules") as string | null;
-    const schedules = JSON.parse(schedulesJson || "[]");
-    const created = await (getPrismaModel(key) as any).create({
-      data: {
-        ...data,
-        schedules: {
-          create: schedules
-            .filter((s: any) => s.startTime && s.endTime)
-            .map((s: any) => ({
-              dayOfWeek: Number(s.dayOfWeek),
-              startTime: String(s.startTime),
-              endTime: String(s.endTime),
-            })),
+  // SocialNetwork.label es obligatorio en la DB pero opcional en el form:
+  // si viene vacío, usar la plataforma como etiqueta por defecto.
+  if (key === "socialNetwork" && !data.label) {
+    data.label = String(formData.get("platform") ?? "");
+  }
+
+  try {
+    if (key === "program") {
+      const schedulesJson = formData.get("_schedules") as string | null;
+      const schedules = JSON.parse(schedulesJson || "[]");
+      const created = await (getPrismaModel(key) as any).create({
+        data: {
+          ...data,
+          schedules: {
+            create: schedules
+              .filter((s: any) => s.startTime && s.endTime)
+              .map((s: any) => ({
+                dayOfWeek: Number(s.dayOfWeek),
+                startTime: String(s.startTime),
+                endTime: String(s.endTime),
+              })),
+          },
         },
-      },
-    });
-    const _ = created;
-  } else {
-    await (getPrismaModel(key) as any).create({ data });
+      });
+      const _ = created;
+    } else {
+      await (getPrismaModel(key) as any).create({ data });
+    }
+  } catch (e) {
+    return friendlyError(e, "Error al guardar");
   }
 
   revalidatePath("/");
@@ -115,12 +150,16 @@ export async function updateResource(key: ModelKey, id: number, formData: FormDa
   const data = buildData(key, formData);
   const model = getPrismaModel(key) as any;
 
-  if (key === "program") {
-    await model.update({ where: { id }, data });
-    const schedulesJson = formData.get("_schedules") as string | null;
-    if (schedulesJson) await saveSchedules(id, schedulesJson);
-  } else {
-    await model.update({ where: { id }, data });
+  try {
+    if (key === "program") {
+      await model.update({ where: { id }, data });
+      const schedulesJson = formData.get("_schedules") as string | null;
+      if (schedulesJson) await saveSchedules(id, schedulesJson);
+    } else {
+      await model.update({ where: { id }, data });
+    }
+  } catch (e) {
+    return friendlyError(e, "Error al guardar");
   }
 
   revalidatePath("/");
