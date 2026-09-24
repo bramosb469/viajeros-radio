@@ -23,6 +23,28 @@ BigInt.prototype.toJSON = function () {
   return Number(this);
 };
 
+// Auto-respaldo de la DB al iniciar (defensa ante reemplazos externos del
+// archivo dev.db): si no hay ningún respaldo de las últimas 20h, copiar la
+// DB actual a prisma/backups/. Aparecen en Panel → Ajustes → Respaldos.
+try {
+  const adbPath = path.join(__dirname, 'prisma', 'dev.db');
+  const abDir = path.join(__dirname, 'prisma', 'backups');
+  if (fs.existsSync(adbPath)) {
+    fs.mkdirSync(abDir, { recursive: true });
+    const limit = Date.now() - 20 * 3600 * 1000;
+    const hasRecent = fs.readdirSync(abDir).some((n) => {
+      if (!/^dev-\d{14}\.db$/.test(n)) return false;
+      try { return fs.statSync(path.join(abDir, n)).mtimeMs > limit; }
+      catch (e) { return false; }
+    });
+    if (!hasRecent) {
+      const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+      fs.copyFileSync(adbPath, path.join(abDir, 'dev-' + stamp + '.db'));
+      console.log('[server.js] Auto-backup DB creado');
+    }
+  }
+} catch (e) { console.error('[server.js] Auto-backup error:', e.message); }
+
 const next = require('next');
 const app = next({ dev: false });
 const handle = app.getRequestHandler();

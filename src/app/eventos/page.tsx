@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import prisma from '@/lib/db';
 import styles from './page.module.css';
 
@@ -72,7 +73,11 @@ export default async function EventosPage() {
 
 function EventCard({ evento, isPasado = false }: { evento: any; isPasado?: boolean }) {
   return (
-    <div className={`${styles.card} ${isPasado ? styles.cardPasado : ''}`}>
+    <Link
+      href={`/eventos/${evento.id}`}
+      className={`${styles.card} ${isPasado ? styles.cardPasado : ''}`}
+      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+    >
       {evento.imageUrl ? (
         <div className={styles.imageWrapper}>
           <img src={evento.imageUrl} alt={evento.title} className={styles.image} />
@@ -97,6 +102,6 @@ function EventCard({ evento, isPasado = false }: { evento: any; isPasado?: boole
           </p>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
