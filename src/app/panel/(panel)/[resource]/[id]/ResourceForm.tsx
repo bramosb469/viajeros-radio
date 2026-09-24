@@ -49,15 +49,23 @@ export default function ResourceForm({
       formData.append("_schedules", JSON.stringify(validSchedules));
     }
 
-    const result = initial
-      ? await updateResource(resourceKey as any, (initial as any).id, formData)
-      : await createResource(resourceKey as any, formData);
+    try {
+      const result = initial
+        ? await updateResource(resourceKey as any, (initial as any).id, formData)
+        : await createResource(resourceKey as any, formData);
 
-    if (result.ok) {
-      router.push(`/panel/${resourceSlug}`);
-      router.refresh();
-    } else {
-      setError(result.error || "Error al guardar");
+      if (result.ok) {
+        router.push(`/panel/${resourceSlug}`);
+        router.refresh();
+      } else {
+        setError(result.error || "Error al guardar");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Error al guardar: ${err.message}`
+          : "Error al guardar. Probá recargar la página (Ctrl+Shift+R) e intentar de nuevo."
+      );
     }
   };
 
