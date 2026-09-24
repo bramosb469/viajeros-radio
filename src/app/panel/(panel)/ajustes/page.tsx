@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import SettingsForm from "./SettingsForm";
+import PasswordForm from "./PasswordForm";
 import styles from "./ajustes.module.css";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,7 @@ export default async function AjustesPage() {
           }
         }
       />
+      <PasswordForm />
     </div>
   );
 }
